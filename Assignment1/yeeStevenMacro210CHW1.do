@@ -28,40 +28,42 @@ cap log using  "YeeStevenMacro210CHW1", text
 local FREDapikey = "51296cfad067cf98109b7f86e8214624"
 //Setting the fredkey for program
 . set fredkey `FREDapikey', permanently
-//Importing the FRED dataset GNPC96
+//Importing the FRED dataset
 import fred GDPC1 PCECC96 GPDIC1 PAYEMS HOANBS CNP16OV, aggregate(quarterly,eop) clear
 rename datestr DATESTR
 rename daten DATEN
-gen year = year(DATEN)
-sort year DATEN 
-by year: replace year = . if _n != 4
-// replace GDPC1 = GDPC1/CNP16OV * 1000000000
-// replace PCECC96 = PCECC96/CNP16OV * 1000000000
-// replace GPDIC1  = GPDIC1/CNP16OV * 1000000000
-
-
+gen YEAR = year(DATEN)
+sort YEAR DATEN 
+by YEAR: replace YEAR = . if _n != 4
 save FREDData, replace
 
 import excel "/Users/stevenyee/Documents/UCSD/UCSDEconomics/Spring2020/ECON210C-MacroC/assignments/Assignment1/nipaData.xlsx", sheet("Sheet1") firstrow case(upper) clear
 
-rename A year
-destring year, replace
-sort year
-
+rename A YEAR
+destring YEAR, replace
+sort YEAR
 save NIPAData, replace
 
 use FREDData
-
-// keep if year != .
-// keep if GDPC1 != .
-sort year DATEN
-merge year using NIPAData
+sort YEAR DATEN
+merge YEAR using NIPAData
 
 sort DATEN
 drop if _merge == 2
-// replace NONRESIDENTIALCHAINTYPE = NONRESIDENTIALCHAINTYPE/CNP16OV * 1000000000
 
-// line GDPC1 PCECC96 GPDIC1 PAYEMS HOANBS NONRESIDENTIALCHAINTYPE year
+//Making it so only observations with full set of datapoints are kept
+gen YEAR2 = year(DATEN)
+drop YEAR
+gen YEAR = YEAR2
+drop if YEAR < 1947
+drop if YEAR > 2019
+format DATEN  %tq
+gen quarterDates = qofd(DATEN)
+
+// replace GDPC1 = GDPC1/CNP16OV * 1000000000
+// replace PCECC96 = PCECC96/CNP16OV * 1000000000
+// replace GPDIC1  = GPDIC1/CNP16OV * 1000000000
+// replace NONRESIDENTIALCHAINTYPE = NONRESIDENTIALCHAINTYPE/CNP16OV * 1000000000
 
 gen lnGDP = ln(GDPC1)
 gen lnConsumption = ln(PCECC96)
@@ -69,37 +71,25 @@ gen lnRealInvest = ln(GPDIC1)
 gen lnEmploy = ln(PAYEMS)
 gen lnHours = ln(HOANBS)
 
+// lnChainCapital
+gen lnRealCapitalChain = ln(NONRESIDENTIALCHAINTYPE)
+ipolate lnRealCapitalChain quarterDates, gen(lnRealCapitalChain2)
+rename lnRealCapitalChain2 lnChainCapital
+
 // lnIndexCapital
-gen lnRealCapital2 = ln(NONRESIDENTIALCHAINTYPE)
-ipolate lnRealCapital2 DATEN, gen(lnQRealCapital)
-rename lnQRealCapital lnIndexCapital
-
-// lnStockCapital
-gen lnRealCapital3 = ln(NONRESIDENTIALCURRENTCOS)
-ipolate lnRealCapital3 DATEN, gen(lnQRealCapital2)
-rename lnQRealCapital2 lnChainCapital
+gen lnRealIndexCapital = ln(NONRESIDENTIALCURRENTCOS)
+ipolate lnRealIndexCapital quarterDates, gen(lnRealIndexCapital2)
+rename lnRealIndexCapital2 lnIndexCapital
 
 
-
-gen capitalShare = 0.67
-gen lnSolowResidualIndex = lnGDP - (1 - capitalShare) * lnHours - capitalShare * lnIndexCapital
-gen lnSolowResidualChain = lnGDP - (1 - capitalShare) * lnHours - capitalShare * lnChainCapital
-
-gen year2 = year(DATEN)
-drop year
-gen year = year2
-drop if year < 1947
-drop if year > 2019
-
-format DATEN  %tq
-gen quarterDates = qofd(DATEN)
-drop DATEN
-gen DATEN = quarterDates
+local capitalShare = 0.67
+gen lnSolowResidualIndex = lnGDP - (1 - `capitalShare') * lnHours - `capitalShare' * lnIndexCapital
+gen lnSolowResidualChain = lnGDP - (1 - `capitalShare') * lnHours - `capitalShare' * lnChainCapital
 
 
 save cleanData, replace
-line lnSolowResidualChain lnSolowResidualIndex DATEN
-line lnGDP lnConsumption lnRealInvest lnEmploy lnHours lnChainCapital lnIndexCapital lnSolowResidualIndex lnSolowResidualChain DATEN
+// line lnSolowResidualChain lnSolowResidualIndex quarterDatesc
+line lnGDP lnConsumption lnRealInvest lnEmploy lnHours lnChainCapital lnIndexCapital lnSolowResidualIndex lnSolowResidualChain quarterDates
 
 
 
