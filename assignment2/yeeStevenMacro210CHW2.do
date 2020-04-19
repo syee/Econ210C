@@ -7,6 +7,9 @@ Update:
 *******************************************************************************/
 
 cap log using  "YeeStevenMacro210CHW2", text
+
+//1a
+/* Data Prep
 import fred FEDFUNDS UNRATE A191RI1Q225SBEA, aggregate(quarterly,avg) clear
 rename datestr DATESTR
 rename daten DATEN
@@ -20,14 +23,17 @@ format DATEQ %tq
 rename *, lower
 rename a191ri1q225sbea gdp_deflator
 rename unrate unemployment
+*/
+use fred.dta, clear
 
 tsset dateq
 //Plot raw series
 foreach series of varlist gdp_deflator unemployment fedfunds{
 	tsline `series', ytitle(,size(small)) ylabel(,labsize(small)) xtitle("") xlabel(,labsize(small)) title(`series')
-	graph export `series'.png, replace
+	graph export macroC_ps2_1a_`series'.png, replace
 }
 
+//1b
 *******************************************************************************
 // Estimating VAR
 *******************************************************************************
@@ -73,6 +79,7 @@ e(A) - shows contemporaneous coefficients
 
 
 //1f
+cap drop money_shock
 predict money_shock if e(sample), residuals equation(#3)
 tsline money_shock if inrange(dateq, tq(`start_date'), tq(`end_date')), ytitle(,size(small)) ylabel(,labsize(small)) xtitle("") xlabel(,labsize(small)) title("Money Shock")
 	graph export macroC_ps2_1f_moneyshock.png, replace
@@ -96,10 +103,10 @@ rename date dateq
 rename *, lower
 merge 1:1 dateq using fred
 
-replace resid_romer = 0 if dateq < tq(1969q1)
+replace resid_romer = 0 if dateq < tq(1960q1)
 
 //2b
-local start_date = "1969q1"
+local start_date2 = "1960q1"
 local end_date = "2007q4"
 tsset dateq
 
@@ -107,17 +114,17 @@ tsset dateq
 // reg unemployment L(1/8).gdp_deflator L(1/8).unemployment L(1/8).fedfunds L(0/12).resid_romer if inrange(dateq, tq(`start_date'), tq(`end_date'))
 // reg fedfunds L(1/8).gdp_deflator L(1/8).unemployment L(1/8).fedfunds L(0/12).resid_romer if inrange(dateq, tq(`start_date'), tq(`end_date'))
 
-var gdp_deflator unemployment fedfunds if inrange(dateq, tq(`start_date'), tq(`end_date')), lags(1/8) exog(L(0/12).resid_romer)
+//Graphed IRFs for endogenous variables
+var gdp_deflator unemployment fedfunds if inrange(dateq, tq(`start_date2'), tq(`end_date')), lags(1/8) exog(L(0/12).resid_romer)
 irf create order1, set(var1.irf) replace step(20)
 irf graph irf, xlabel(0(4)20) irf(order1) yline(0,lcolor(black)) byopts(yrescale)
 graph export macroC_ps2_2b_non_romer.png, replace
 
-var gdp_deflator unemployment fedfunds if inrange(dateq, tq(`start_date'), tq(`end_date')), lags(1/8) exog(L(0/12).resid_romer)
+//Graphed IRFs for Romer Shock
+var gdp_deflator unemployment fedfunds if inrange(dateq, tq(`start_date2'), tq(`end_date')), lags(1/8) exog(L(0/12).resid_romer)
 irf create dm, set(myirf) step(20) replace
 irf graph dm, impulse(resid_romer) response(gdp_deflator unemployment fedfunds) xlabel(0(4)20) irf(dm) yline(0,lcolor(black)) byopts(yrescale)
 graph export macroC_ps2_2b_romer.png, replace
-
-
 
 
 //2c
@@ -127,11 +134,11 @@ matrix A2 = (1,0,0,0 \ .,1,0,0 \ .,.,1,0 \ .,.,.,1)
 matrix B2 = (.,0,0,0 \ 0,.,0,0 \ 0,0,.,0 \ 0,0,0,.)
 
 //running the ordered structural VAR with 4 lags according to our constraints
-svar resid_romer gdp_deflator unemployment fedfunds if inrange(dateq, tq(`start_date'), tq(`end_date')), lags(1/4) aeq(A2) beq(B2)
+svar resid_romer gdp_deflator unemployment fedfunds if inrange(dateq, tq(`start_date2'), tq(`end_date')), lags(1/4) aeq(A2) beq(B2)
 
 irf create order1, set(var2.irf) replace step(20)
 irf graph sirf, xlabel(0(4)20) irf(order1) yline(0,lcolor(black)) byopts(yrescale)
-graph export macroC_ps2_2c.png, replace
+graph export macroC_ps2_2c_svar.png, replace
 
 //Briefly, explain why it is sensible to order the Romer shock first in the VAR.
 /* It is sensible to order the Romer shock first in the ordered VAR because it's not determined by anything contemporaneously. It is completely exogenous contemporaneously.
