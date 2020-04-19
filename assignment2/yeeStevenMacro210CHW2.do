@@ -43,6 +43,11 @@ local start_date = "1960q1"
 local end_date = "2007q4"
 
 var gdp_deflator unemployment fedfunds if inrange(dateq, tq(`start_date'), tq(`end_date')), lags(1/4)
+irf create order1, set(var1.irf) replace step(20)
+irf graph irf, xlabel(0(4)20) irf(order1) yline(0,lcolor(black)) byopts(yrescale)
+graph export macroC_ps2_1b_var.png, replace
+
+
 //1c
 /* It makes sense to end the sample in 2007Q4 because that is when the great recession was starting
 */
@@ -70,7 +75,7 @@ e(A) - shows contemporaneous coefficients
 //1f
 predict money_shock if e(sample), residuals equation(#3)
 tsline money_shock if inrange(dateq, tq(`start_date'), tq(`end_date')), ytitle(,size(small)) ylabel(,labsize(small)) xtitle("") xlabel(,labsize(small)) title("Money Shock")
-	graph export money_shock.png, replace
+	graph export macroC_ps2_1f_moneyshock.png, replace
 
 /* (g) What are the identified monetary shocks in 2001Q3 and 2001Q4? How should one interpret these shocks?
 Response to 9/11
@@ -107,8 +112,9 @@ irf create order1, set(var1.irf) replace step(20)
 irf graph irf, xlabel(0(4)20) irf(order1) yline(0,lcolor(black)) byopts(yrescale)
 graph export macroC_ps2_2b_non_romer.png, replace
 
+var gdp_deflator unemployment fedfunds if inrange(dateq, tq(`start_date'), tq(`end_date')), lags(1/8) exog(L(0/12).resid_romer)
 irf create dm, set(myirf) step(20) replace
-irf graph dm, impulse(resid_romer) response(gdp_deflator unemployment fedfunds)
+irf graph dm, impulse(resid_romer) response(gdp_deflator unemployment fedfunds) xlabel(0(4)20) irf(dm) yline(0,lcolor(black)) byopts(yrescale)
 graph export macroC_ps2_2b_romer.png, replace
 
 
