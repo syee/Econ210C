@@ -5,7 +5,7 @@ varexo eps;
 parameters chi alpha psi phi beta gamma rho_m nu theta k_m ;
 
 gamma = 1;
-rho_m = .93;
+rho_m = .9;
 psi = 1;
 phi = 1;
 alpha = 1/3;
@@ -58,4 +58,4 @@ shocks;
 var eps; stderr 1;
 end;
 
-stoch_simul(loglinear, order = 1) c w p i m n ;
+stoch_simul(loglinear, nograph, order = 1) c w p i m n ;
