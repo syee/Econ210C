@@ -103,7 +103,7 @@ plot(irfs_rho99.pi_eps_a)
 plot(irfs_rho1.pi_eps_a)
 legend off
 hold off
-title('Inlation IRF, $\theta$ = .75','interpreter','latex')
+title('Inflation IRF, $\theta$ = .75','interpreter','latex')
 
 subplot(2,2,2)
 hold on
@@ -242,7 +242,7 @@ plot(irfs_rho99.pi_eps_a)
 plot(irfs_rho1.pi_eps_a)
 legend off
 hold off
-title('Inlation IRF, $\theta$ = 0','interpreter','latex')
+title('Inflation IRF, $\theta$ = 0','interpreter','latex')
 
 subplot(2,2,2)
 hold on
